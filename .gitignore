@@ -1,0 +1,29 @@
+# Java related
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+
+# Maven related
+target/
+*.log
+
+# IntelliJ IDEA specific
+.idea/
+*.iws
+*.ipr
+out/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Other
+.gradle/
+*.orig
