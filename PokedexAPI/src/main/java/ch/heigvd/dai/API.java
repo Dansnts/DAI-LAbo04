@@ -60,6 +60,39 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
 
+        app.post("/trainer/{name}/add-pokemons", ctx -> {
+            String trainerName = ctx.pathParam("name");
+            Trainer trainer = trainers.get(trainerName);
+
+            if (trainer == null) {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
+                return;
+            }
+
+            // Récupérer les Pokémon à ajouter à partir du corps de la requête
+            List<Pokemon> pokemonsToAdd = ctx.bodyAsClass(ArrayList.class);
+            ArrayList<Pokemon> validatedPokemons = new ArrayList<>();
+
+            for (Object obj : pokemonsToAdd) {
+                Map<String, Object> pokemonMap = (Map<String, Object>) obj;
+                String number = (String) pokemonMap.get("number");
+
+                // Vérifier si le Pokémon existe dans le Pokédex
+                Pokemon pokedexPokemon = pokedex.get(number);
+                if (pokedexPokemon != null) {
+                    validatedPokemons.add(pokedexPokemon);
+                } else {
+                    ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon with number " + number + " not found in Pokédex.");
+                    return;
+                }
+            }
+
+            // Ajouter les Pokémon validés à l'équipe du Trainer
+            trainer.addPokemons(validatedPokemons);
+            ctx.status(HttpStatus.OK).json(trainer);
+        });
+
+
 
         app.post("/pokemon/batch", ctx -> {
             List<Pokemon> newPokemons = ctx.bodyAsClass(ArrayList.class);
