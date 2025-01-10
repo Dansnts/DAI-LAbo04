@@ -1,11 +1,11 @@
-# Utiliser l'image de base php:apache
-FROM eclipse-temurin:21
+# Utiliser une image de base Java avec Temurin JDK 21
+FROM eclipse-temurin:21-jre as base
 
+# Définir le répertoire de travail dans le conteneur
+WORKDIR /opt/app
 
-RUN mkdir /opt/app
-COPY pokemon-api.jar /opt/app
-CMD ["java", "-jar", "/opt/app/pokemon-api.jar"]
+# Copier le fichier JAR de l'application dans le conteneur
+COPY pokemon-api.jar .
 
-
-
-
+# Définir la commande de démarrage
+CMD ["java", "-jar", "pokemon-api.jar", "-p", "6969"]
