@@ -6,7 +6,7 @@
 
     <groupId>ch.heig.dai</groupId>
     <artifactId>Javalin</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-Pokedex-API</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -15,17 +15,35 @@
     </properties>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/io.javalin/javalin-bundle -->
+        <!-- Javalin bundle for web framework -->
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin-bundle</artifactId>
             <version>6.3.0</version>
         </dependency>
+
+        <!-- Picocli for CLI arguments parsing -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.7.0</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Maven Shade Plugin -->
+            <!-- Maven Compiler Plugin for Java compilation -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Shade Plugin for creating executable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -55,6 +73,13 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Maven Surefire Plugin for running tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
             </plugin>
         </plugins>
     </build>
