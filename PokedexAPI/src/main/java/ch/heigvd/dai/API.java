@@ -2,16 +2,19 @@ package ch.heigvd.dai;
 
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class API {
+    private final long TTL = 1800000;     // time in milliseconds
     Javalin app;
     int port ;
     Map<String, Pokemon> pokedex = new HashMap<>();
     Map<String, Trainer> trainers = new HashMap<>();
+    Cache<String, Pokemon> pokemonCache = new Cache<>();
+    Cache<String, Trainer> trainerCache = new Cache<>();
+    Cache<String, String> htmlCache = new Cache<>();
+    Cache<String, Collection> collectionsCache = new Cache<>();
 
 
 
@@ -128,7 +131,20 @@ public class API {
         // GET
         app.get("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
-            Pokemon pokemon = pokedex.get(number);
+            Pokemon pokemon;
+            Pokemon cacheEntry = pokemonCache.get(number);
+
+            if (cacheEntry != null) {
+                pokemon = cacheEntry;
+            } else {
+
+                pokemon = pokedex.get(number);
+
+                if (pokemon != null) {
+                    pokemonCache.set(number, pokemon, TTL);
+                }
+            }
+
             if (pokemon != null) {
                 ctx.status(HttpStatus.OK).json(pokemon);
             } else {
@@ -138,7 +154,20 @@ public class API {
 
         app.get("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
-            Trainer trainer = trainers.get(name);
+            Trainer trainer;
+            Trainer cacheEntry = trainerCache.get(name);
+
+            if (cacheEntry != null) {
+                trainer = cacheEntry;
+            } else {
+
+                trainer = trainers.get(name);
+
+                if (trainer != null) {
+                    trainerCache.set(name, trainer, TTL);
+                }
+            }
+
             if (trainer != null) {
                 ctx.status(HttpStatus.OK).json(trainer);
             } else {
@@ -146,9 +175,22 @@ public class API {
             }
         });
 
-        app.get("/trainer/{name}/pokemons", ctx -> {
+        app.get("/trainer/{name}/pokemons", ctx -> {  /// TO-DO check si c'est pas un dup
             String name = ctx.pathParam("name");
-            Trainer trainer = trainers.get(name);
+            Trainer trainer;
+            Trainer cacheEntry = trainerCache.get(name);
+
+            if (cacheEntry != null) {
+                trainer = cacheEntry;
+            } else {
+
+                trainer = trainers.get(name);
+
+                if (trainer != null) {
+                    trainerCache.set(name, trainer, TTL);
+                }
+            }
+
             if (trainer != null) {
                 ctx.status(HttpStatus.OK).json(trainer);
             } else {
@@ -156,13 +198,44 @@ public class API {
             }
         });
 
-        app.get("/trainer", ctx -> ctx.status(HttpStatus.OK).json(trainers.values()));
-        app.get("/pokemon", ctx -> ctx.status(HttpStatus.OK).json(pokedex.values()));
+        app.get("/trainer", ctx -> {
+            Collection collections ;
+            Collection cacheEntries = collectionsCache.get("trainer");
+
+            if (cacheEntries != null) {
+                collections = cacheEntries;
+
+            } else {
+                collections = trainers.values();
+                collectionsCache.set("trainer", collections, TTL);
+            }
+
+            ctx.status(HttpStatus.OK).json(collections);
+        });
+
+        app.get("/pokemon", ctx -> {
+            Collection collections ;
+            Collection cacheEntries = collectionsCache.get("pokemon");
+
+            if (cacheEntries != null) {
+                collections = cacheEntries;
+
+            } else {
+                collections = trainers.values();
+                collectionsCache.set("pokemon", collections, TTL);
+            }
+            ctx.status(HttpStatus.OK).json(collections);
+        });
 
         // Endpoint pour générer une page HTML avec un tableau
         app.get("/pokemon-html", ctx -> {
             if (pokedex.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Pokémon found in the Pokédex.");
+                return;
+            }
+
+            if (htmlCache.get("pokemon-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("pokemon-html"));
                 return;
             }
 
@@ -217,11 +290,17 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("pokemon-html", htmlBuilder.toString(), TTL );
         });
 
         app.get("/trainer-html", ctx -> {
             if (trainers.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Trainers found.");
+                return;
+            }
+
+            if (htmlCache.get("trainer-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("trainer-html"));
                 return;
             }
 
@@ -279,6 +358,7 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("trainer-html", htmlBuilder.toString(), TTL );
         });
 
 
@@ -288,6 +368,11 @@ public class API {
 
             if (trainer == null) {
                 ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
+                return;
+            }
+
+            if (htmlCache.get("team-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("team-html"));
                 return;
             }
 
@@ -348,6 +433,7 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("team-html", htmlBuilder.toString(), TTL );
         });
 
 
@@ -380,6 +466,16 @@ public class API {
             } else {
                 ctx.status(HttpStatus.NOT_FOUND).result("Pokémon not found");
             }
+        });
+
+        app.delete("/trainer/{name}", ctx -> {
+            String name = ctx.pathParam("number");
+            if (trainers.remove(name) != null) {
+                ctx.status(HttpStatus.NO_CONTENT);
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found");
+            }
+
         });
     }
 
