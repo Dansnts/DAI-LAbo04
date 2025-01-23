@@ -170,3 +170,15 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
 }'
 
 ```
+
+# Delete un pokémon
+``` bash
+curl -X DELETE http://localhost:7000/pokemon/025 \
+-H "Content-Type: application/json" 
+```
+
+# Delete un dresseur
+``` bash
+curl -X DELETE http://localhost:7000/trainer/Red \
+-H "Content-Type: application/json" 
+```

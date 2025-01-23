@@ -221,7 +221,7 @@ public class API {
                 collections = cacheEntries;
 
             } else {
-                collections = trainers.values();
+                collections = pokedex.values();
                 collectionsCache.set("pokemon", collections, TTL);
             }
             ctx.status(HttpStatus.OK).json(collections);
@@ -443,6 +443,16 @@ public class API {
             Pokemon existingPokemon = pokedex.get(number);
             if (existingPokemon != null) {
                 Pokemon updatedData = ctx.bodyAsClass(Pokemon.class);
+                if (updatedData.getNumber() != null && !updatedData.getNumber().equals(number)) {
+                    String newNumber = updatedData.getNumber();
+                    if (pokedex.get(newNumber) == null) {
+                        existingPokemon.setNumber(newNumber);
+                        pokedex.put(newNumber, existingPokemon);
+                        pokedex.remove(number);
+                    } else {
+                        ctx.status(HttpStatus.CONFLICT).result("Pokemon already exists.");
+                    }
+                }
                 if (updatedData.getName() != null) existingPokemon.setName(updatedData.getName());
                 if (updatedData.getTypes() != null) existingPokemon.setTypes(updatedData.getTypes());
                 if (updatedData.getDescription() != null) existingPokemon.setDescription(updatedData.getDescription());
@@ -469,7 +479,7 @@ public class API {
         });
 
         app.delete("/trainer/{name}", ctx -> {
-            String name = ctx.pathParam("number");
+            String name = ctx.pathParam("name");
             if (trainers.remove(name) != null) {
                 ctx.status(HttpStatus.NO_CONTENT);
             } else {
