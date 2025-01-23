@@ -1,7 +1,215 @@
-# Ajout d'un pokémon
+# Projet : Configuration de la Machine Virtuelle et Application Web
 
+## Table des Matières
+
+- [Projet : Configuration de la Machine Virtuelle et Application Web](#projet--configuration-de-la-machine-virtuelle-et-application-web)
+  - [Table des Matières](#table-des-matières)
+    - [Installation et Configuration de la Machine Virtuelle](#installation-et-configuration-de-la-machine-virtuelle)
+    - [Configuration de la Zone DNS](#configuration-de-la-zone-dns)
+      - [Exemple:](#exemple)
+    - [Déploiement et Exécution avec Docker Compose](#déploiement-et-exécution-avec-docker-compose)
+    - [Build Maven](#build-maven)
+    - [Résilience des Structures de Données](#résilience-des-structures-de-données)
+    - [API et Interaction avec l'Application Web](#api-et-interaction-avec-lapplication-web)
+      - [Pokémon](#pokémon)
+        - [Ajout d'un pokémon](#ajout-dun-pokémon)
+        - [Ajout de plusieurs pokémon](#ajout-de-plusieurs-pokémon)
+        - [Renommer un Pokémon](#renommer-un-pokémon)
+      - [Dresseur](#dresseur)
+        - [Ajout d'un dresseur](#ajout-dun-dresseur)
+        - [Ajout de pokémon à un dresseur](#ajout-de-pokémon-à-un-dresseur)
+        - [Renommer un dresseur](#renommer-un-dresseur)
+
+---
+
+### Installation et Configuration de la Machine Virtuelle
+
+1. **Prérequis** :
+   - Une Instance chez un fournisseur comme Azure ou AWS.
+   - Une image Linux préconfigurée de votre machine virtuelle (Ubuntu 24.02, Debian 12 ou mieux encore Alpine Linux).
+
+2. **Instructions** :
+   - Créer la VM chez votre fourniseurs avec les spécs nécessaires avec votre image Linux. (Ici 1 Coeur et 2GB de RAM devraient suffir)
+   ![alt text](/readmePictures/VM1.png)
+
+   - Configurez les réseaux pour utiliser une interface NAT et une interface réseau privé. Si par exemple vous voulez utiliser un autre port autre que le 22 pour le SSH ou avoir un port différent sur Traefik tout en gardant tout sur le même nom de domaine.
+   ![alt text](/readmePictures/FW.png)
+   - Démarrez la machine virtuelle.
+   - Se connecter dessus en SSH avec le bon username/mot de passe ou bien directement avec votre clé SSH
+  
+3. **Connexion** :
+   - Utilisez la commande suivante pour accéder à votre VM :
+    ```bash
+    ssh -i votre_cle_ssh.pem user@adresse_ip_vm
+    ```
+
+
+
+ 4. **Mise à niveau et installation de Docker & Docker compose**  
+    Copier simplement ces commandes et executer les dans votre terminal.
+
+    ```bash
+    # Mettre à jour les paquets existants
+    sudo apt update && sudo apt upgrade -y
+
+    # Installer les dépendances nécessaires
+    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+
+    # Ajouter la clé GPG officielle de Docker
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+    # Ajouter le dépôt Docker
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # Mettre à jour les paquets et installer Docker
+    sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+    # Vérifier que Docker est bien installé
+    sudo docker --version
+
+    # Ajouter l'utilisateur actuel au groupe Docker (optionnel)
+    sudo usermod -aG docker $USER
+
+    # Installer Docker Compose
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+    # Appliquer les permissions nécessaires
+    sudo chmod +x /usr/local/bin/docker-compose
+    ```
+
+    Puis vérifier que tout fonctionne avec :
+
+    ```bash
+    # Vérifier que Docker Compose est bien installé
+    docker-compose --version
+    docker run hello-world
+    ```
+
+---
+
+### Configuration de la Zone DNS
+
+1. Ajoutez les enregistrements DNS suivants dans votre fournisseur DNS :
+   - **Nom de domaine** : `www.votre-domaine.com`
+   - **Type** : `A`
+   - **Adresse IP** : Adresse IP publique de la VM.
+
+2. Validez la configuration en utilisant cette commande :
+```bash
+dig www.votre-domaine.com
+```
+   Le retour doit inclure l'adresse IP configurée. 
+   #### Exemple:
+``` SH
+dig www.dai.servecounterstrike.com 
+
+; <<>> DiG 9.18.30 <<>> www.dai.servecounterstrike.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN, id: 56345
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;www.dai.servecounterstrike.com.	IN	A
+
+;; AUTHORITY SECTION:
+servecounterstrike.com.	60	IN	SOA	nf1.no-ip.com. hostmaster.no-ip.com. 2006809829 90 120 604800 60
+
+;; Query time: 19 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
+;; WHEN: Thu Jan 23 19:16:47 CET 2025
+;; MSG SIZE  rcvd: 116
+```
+
+---
+
+### Déploiement et Exécution avec Docker Compose
+Pour information ce projet utilise docker-compose, ainsi il n'est pas disponnible de faire un pull d'une simple image, mais si vous le souhaiter vous pouver build grâce au Docker file mis a dispossition dans `PokedexAPI/docker` et l'expoiter comme bon vous semble, mais la partie Traefik ne sera pas disponnible.
+
+1. **Clonez le dépôt** :
+   ```bash
+   git clone https://github.com/Dansnts/DAI-Labo04
+   cd PokedexAPI/docker
+   ```
+
+2. **Déplacer les fichiers sur votre VM** :
+   ```bash
+   scp ./* utilisateur@adresse-ip-distante:/chemin/vers/destination
+   ```
+
+3. **Construisez et déployez avec Docker Compose** :
+   ``` bash
+   cd chemin/vers/destination
+   docker-compose up --build
+   ```
+
+4. **Accéder à l'application** :
+   - Accédez à l'application à l'adresse suivante (Selon les ports que vous avez décider si vous avez modifié le fichers Docker): `https://www.mon-domaine-trop-cool.com`
+
+---
+
+
+
+### Build Maven
+
+1. **Build avec Maven** :
+   - Assurez-vous d'avoir Maven installé.
+   - Exécutez :
+    ``` bash
+    mvn dependency:go-offline clean compile package
+    ```
+
+---
+
+
+### Résilience des Structures de Données
+  - Notre code utilise des `ConcurrentHashMap` en Java pour cela.
+
+---
+
+
+### API et Interaction avec l'Application Web
+Cette API vous permet de gérer les Pokémon et les dresseurs. Elle utilise le protocole HTTP avec le format JSON pour l'échange de données.
+
+#### Principales fonctionnalités
+
+- Ajouter un Pokémon (individuellement ou en lot)
+- Ajouter un dresseur
+- Obtenir tous les dresseurs ou un dresseur spécifique
+- Obtenir l'équipe d'un dresseur spécifique
+- Obtenir tous les Pokémon ou un Pokémon spécifique
+- Renommer un Pokémon ou un dresseur
+- Supprimer un Pokémon ou un dresseur
+
+#### Pokémon
+
+##### Ajout d'un pokémon
+- **Endpoint**: `POST /pokemon`
+- **Description**: Ajoute un nouveau pokémon.
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    {
+      "number": "001",
+      "name": "Bulbasaur",
+      "types": ["Grass", "Poison"],
+      "description": "A strange seed was planted on its back at birth.",
+      "size": 0.7,
+      "weight": 6.9,
+      "genderOptions": ["Male", "Female"],
+      "shinyLock": false,
+      "regions": ["Kanto"]
+    }
+
+###### Exemple prêt a l'emploi:
 ``` bash
-curl -X POST http://localhost:7000/pokemon \
+curl -X POST https://dai.servecounterstrike.com/pokemon \
 -H "Content-Type: application/json" \
 -d '{
     "number": "001",
@@ -16,15 +224,58 @@ curl -X POST http://localhost:7000/pokemon \
 }'
 
 ```
+###### Réponse
 
-# Ajout de plusieurs pokémon
+- **Statut** :
+    - `201` (Créé) : Le Pokémon a été ajouté avec succès.
+    - `409` (Conflit) : Un Pokémon avec ce numéro de Pokédex existe déjà.
+##### Ajout de plusieurs pokémon
 
-```bash
-curl -X POST http://localhost:7000/pokemon/batch \
+- **Endpoint**: `POST /pokemon/batch`
+- **Description** : Ajoute plusieurs Pokémon en une seule requête et ignore les doublons qui pourraient être présents dans la requête.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:  
+  Un array d'objet de pokémon, par exemple:
+
+    ``` json
+    [
+      {
+        "number": "001",
+        "name": "Bulbasaur",
+        "types": ["Grass", "Poison"],
+        "description": "A strange seed was planted on its back at birth.",
+        "size": 0.7,
+        "weight": 6.9,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+      },
+      {
+        "number": "002",
+        "name": "Ivysaur",
+        "types": ["Grass", "Poison"],
+        "description": "When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",
+        "size": 1.0,
+        "weight": 13.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+      }
+    ]
+    ```
+
+###### Exemple prêt a l'emploi:
+
+``` bash
+curl -X POST https://dai.servecounterstrike.com/pokemon/batch \
 -H "Content-Type: application/json" \
 -d '[
     {
-        "number": "001",
+        "number": "1",
         "name": "Bulbasaur",
         "types": ["Grass", "Poison"],
         "description": "A strange seed was planted on its back at birth.",
@@ -35,7 +286,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "002",
+        "number": "2",
         "name": "Ivysaur",
         "types": ["Grass", "Poison"],
         "description": "When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",
@@ -46,7 +297,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "003",
+        "number": "3",
         "name": "Venusaur",
         "types": ["Grass", "Poison"],
         "description": "Its plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",
@@ -57,7 +308,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "004",
+        "number": "4",
         "name": "Charmander",
         "types": ["Fire"],
         "description": "It has a preference for hot things. When it rains, steam is said to spout from the tip of its tail.",
@@ -68,7 +319,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "005",
+        "number": "5",
         "name": "Charmeleon",
         "types": ["Fire"],
         "description": "When it swings its burning tail, it elevates the temperature to unbearably high levels.",
@@ -79,7 +330,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "006",
+        "number": "6",
         "name": "Charizard",
         "types": ["Fire", "Flying"],
         "description": "It spits fire that is hot enough to melt boulders. It may cause forest fires by blowing flames.",
@@ -90,7 +341,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "007",
+        "number": "7",
         "name": "Squirtle",
         "types": ["Water"],
         "description": "When it retracts its long neck into its shell, it squirts out water with vigorous force.",
@@ -101,7 +352,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "008",
+        "number": "8",
         "name": "Wartortle",
         "types": ["Water"],
         "description": "It is recognized as a symbol of longevity. If its shell has algae on it, that Wartortle is very old.",
@@ -112,7 +363,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "009",
+        "number": "9",
         "name": "Blastoise",
         "types": ["Water"],
         "description": "It crushes its foe under its heavy body to cause fainting. In a pinch, it will withdraw inside its shell.",
@@ -121,49 +372,366 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "genderOptions": ["Male", "Female"],
         "shinyLock": false,
         "regions": ["Kanto"]
+    },
+    {
+        "number": "10",
+        "name": "Caterpie",
+        "types": ["Bug"],
+        "description": "For protection, it releases a horrible stench from the antennae on its head to drive away enemies.",
+        "size": 0.3,
+        "weight": 2.9,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "11",
+        "name": "Metapod",
+        "types": ["Bug"],
+        "description": "This Pokémon is vulnerable to attack while its shell is soft, exposing its weak and tender body.",
+        "size": 0.7,
+        "weight": 9.9,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "12",
+        "name": "Butterfree",
+        "types": ["Bug", "Flying"],
+        "description": "In battle, it flaps its wings at high speed to release highly toxic dust into the air.",
+        "size": 1.1,
+        "weight": 32.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "13",
+        "name": "Weedle",
+        "types": ["Bug", "Poison"],
+        "description": "Its poison stinger is very powerful. Its bright-colored body is intended to warn off its enemies.",
+        "size": 0.3,
+        "weight": 3.2,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "14",
+        "name": "Kakuna",
+        "types": ["Bug", "Poison"],
+        "description": "While awaiting evolution, it hides from predators under leaves and in nooks of branches.",
+        "size": 0.6,
+        "weight": 10.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "15",
+        "name": "Beedrill",
+        "types": ["Bug", "Poison"],
+        "description": "It has three poisonous stingers on its forelegs and its tail. They are used to jab its enemy repeatedly.",
+        "size": 1.0,
+        "weight": 29.5,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "016",
+        "name": "Pidgey",
+        "types": ["Normal", "Flying"],
+        "description": "A common sight in forests and woods. It flaps its wings at ground level to kick up blinding sand.",
+        "size": 0.3,
+        "weight": 1.8,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "17",
+        "name": "Pidgeotto",
+        "types": ["Normal", "Flying"],
+        "description": "Very protective of its sprawling territorial area, this Pokémon will fiercely peck at any intruder.",
+        "size": 1.1,
+        "weight": 30.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "18",
+        "name": "Pidgeot",
+        "types": ["Normal", "Flying"],
+        "description": "This Pokémon flies at Mach 2 speed, seeking prey. Its large talons are feared as wicked weapons.",
+        "size": 1.5,
+        "weight": 39.5,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "19",
+        "name": "Rattata",
+        "types": ["Normal"],
+        "description": "Bites anything when it attacks. Small and very quick, it is a common sight in many places.",
+        "size": 0.3,
+        "weight": 3.5,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "20",
+        "name": "Raticate",
+        "types": ["Normal"],
+        "description": "It uses its whiskers to maintain its balance. It apparently slows down if they are cut off.",
+        "size": 0.7,
+        "weight": 18.5,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "21",
+        "name": "Spearow",
+        "types": ["Normal", "Flying"],
+        "description": "Eats bugs in grassy areas. It has to flap its short wings at high speed to stay airborne.",
+        "size": 0.3,
+        "weight": 2.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "22",
+        "name": "Fearow",
+        "types": ["Normal", "Flying"],
+        "description": "With its huge and magnificent wings, it can keep aloft without ever having to land for rest.",
+        "size": 1.2,
+        "weight": 38.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "23",
+        "name": "Ekans",
+        "types": ["Poison"],
+        "description": "It sneaks through grass without making a sound and strikes unsuspecting prey from behind.",
+        "size": 2.0,
+        "weight": 6.9,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "24",
+        "name": "Arbok",
+        "types": ["Poison"],
+        "description": "The frightening patterns on its belly have been studied. Six variations have been confirmed.",
+        "size": 3.5,
+        "weight": 65.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "25",
+        "name": "Pikachu",
+        "types": ["Electric"],
+        "description": "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
+        "size": 0.4,
+        "weight": 6.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "26",
+        "name": "Raichu",
+        "types": ["Electric"],
+        "description": "Its long tail serves as a ground to protect itself from its own high-voltage power.",
+        "size": 0.8,
+        "weight": 30.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+    },
+    {
+        "number": "83",
+        "name": "Farfetchd",
+        "types": ["Normal", "Flying"],
+        "description": "The sprig of green onions it holds is its weapon. It is used much like a metal sword.",
+        "size": 0.8,
+        "weight": 15.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
     }
 ]'
 
-```
-
-
-# Ajout d'un dresseur
-
-``` bash
-curl -X POST http://localhost:7000/trainer \
--H "Content-Type: application/json" \
--d '{
-    "name": "Red"
-}'
 
 ```
+###### Response
 
+- **Status**:
+    - `201` (Créé): Les pokémon ont été ajouté avec succès.
+##### Renommer un Pokémon
+- **Endpoint**: `PATCH /pokemon/{number}`
+- **Description**: Met à jour le nom d’un Pokémon spécifique par son numéro. Toute modification de n’importe quel paramètre du Pokémon fonctionne de la même manière.
 
-# Ajout d'un dresseur
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ``` json
+    {
+      "name": "Piqachou"
+    }
+    ```
+###### Exemple ready to use:
 
 ``` bash
-curl -X POST http://localhost:7000/trainer \
--H "Content-Type: application/json" \
--d '{
-    "name": "Red"
-}'
-
-```
-
-
-# Renommer un Pokémon
-``` bash
-curl -X PATCH http://localhost:7000/pokemon/025 \
+curl -X PATCH https://dai.servecounterstrike.com/pokemon/025 \
 -H "Content-Type: application/json" \
 -d '{
   "name": "Piqachou"
 }'
 
 ```
+###### Réponse
 
-# Renommer un dresseur
+- **Statut** :
+    - `200` (OK) : Le Pokémon a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun Pokémon avec le numéro spécifié.
+    - `409` (Conflit) : Le Pokémon existe déjà (dans le cas où vous changez le numéro d’un Pokémon pour un qui existe déjà dans le Pokédex).
+##### Supprimer un pokemon
+- **Endpoint**: `DELETE /pokemon/{number}`
+- **Description**: supprime un pokémon spécifique en utilisant son numéro unique.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+    ```json
+    {
+      "number": "001"
+    }
+
+###### Exemple ready to use:
 ``` bash
-curl -X PATCH http://localhost:7000/Trainer/Red \
+curl -X DELETE https://dai.servecounterstrike.com/pokemon/{number} \
+-H "Content-Type: application/json" \
+-d '{
+    "number": "001"
+}'
+```
+
+###### Réponse
+
+- **Statut** :
+    - `204` (Pas de contenu) : Le Pokémon a été supprimé avec succès.
+    - `404` (Non trouvé) : Aucun Pokémon avec le numéro spécifié.
+
+#### Dresseur
+
+
+##### Ajout d'un dresseur
+- **Point de terminaison** : `POST /trainer`
+- **Description** : Ajoute un nouveau dresseur.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ``` json
+    {
+      "name": "Red"
+    }
+    ```
+  
+###### Exemple prêt a l'emploi
+
+
+``` bash
+curl -X POST https://dai.servecounterstrike.com/trainer \ 
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Red"
+}'
+
+```
+###### Réponse
+
+- **Statut** :
+    - `201` (Créé) : Le dresseur a été ajouté avec succès.
+    - `409` (Conflit) : Un dresseur avec ce nom existe déjà.
+  
+##### Ajout de pokémon à un dresseur
+- **Point de terminaison** : `POST /trainer/{trainerName}/add-pokemons`
+- **Description** : Ajoute des Pokémon à l'équipe d'un dresseur existant en fonction de leurs numéros.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **Path Parameter**:
+    - `trainerName` - le nom du dresseur a qui les pokemon vont être ajouté.
+- **JSON Body**:  
+  Un array d'objet de pokemon contenant leur numéro unique:
+
+    ``` json
+    [
+      {"number": "003"},
+      {"number": "006"},
+      {"number": "009"}
+    ]
+    ```
+
+###### Exemple prêt a l'emploi
+
+``` bash
+curl -X POST https://dai.servecounterstrike.com/trainer/Red/add-pokemons \ 
+-H "Content-Type: application/json" \
+-d '[
+    {"number": "003"},
+    {"number": "006"},
+    {"number": "009"}
+]'
+
+```
+###### Réponse
+
+- **Statut** :
+    - `201` (Créé) : Les Pokémon ont été ajoutés avec succès au dresseur.
+    - `400` (Mauvaise requête) : Le Pokémon avec le "numéro" n'existe pas dans le Pokédex.
+
+
+##### Renommer un dresseur
+- **Point de terminaison** : `PATCH /trainer/{name}`
+- **Description** : Met à jour le nom d’un dresseur spécifique à partir de son nom actuel.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ``` json
+    {
+      "name": "SouljaBoy"
+    }
+    ```
+###### Exemple prêt a l'emploi
+``` bash
+curl -X PATCH https://dai.servecounterstrike.com/Trainer/Red \
 -H "Content-Type: application/json" \
 -d '{
   "name": "SouljaBoy"
@@ -171,14 +739,72 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
 
 ```
 
-# Delete un pokémon
+###### Réponse
+
+- **Statut** :
+    - `200` (OK) : Le dresseur a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.  
+
+##### changer l'équipe d'un dresseur
+- **Point de terminaison** : `PATCH /trainer/{name}/pokemons`
+- **Description** : Met à jour l'équipe d'un trainer.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ``` json
+    '[
+    {"number": "002"},
+    {"number": "005"},
+    {"number": "008"}
+  ]'
+    ```
+###### Exemple prêt a l'emploi
 ``` bash
-curl -X DELETE http://localhost:7000/pokemon/025 \
--H "Content-Type: application/json" 
+curl -X PATCH https://dai.servecounterstrike.com/trainer/Red/pokemons \
+-H "Content-Type: application/json" \
+-d '[
+    {"number": "002"},
+    {"number": "005"},
+    {"number": "008"}
+]'
+
+```
+###### Réponse
+
+- **Statut** :
+    - `200` (OK) : Le dresseur a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.
+    - `400` (Mauvaise requête) : Pokémon avec le "numéro" non trouvé dans le Pokédex.  
+
+##### Supprimer un dresseur
+- **Endpoint**: `DELETE /trainer/{name}`
+- **Description**: suppprime un dresseur particulier.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+    ```json
+    {
+      "name": "Red"
+    }
+
+###### Exemple ready to use:
+``` bash
+curl -X DELETE https://dai.servecounterstrike.com/trainer/{name} \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Red"
+}'
 ```
 
-# Delete un dresseur
-``` bash
-curl -X DELETE http://localhost:7000/trainer/Red \
--H "Content-Type: application/json" 
-```
+###### Réponse
+
+- **Statut** :
+    - `204` (Pas de contenu) : Le dresseur a été supprimé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.  
+
