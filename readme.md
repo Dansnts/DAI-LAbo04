@@ -311,7 +311,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
     },
     {
         "number": "83",
-        "name": "Farfetch\\'d",
+        "name": "Farfetchd",
         "types": ["Normal", "Flying"],
         "description": "The sprig of green onions it holds is its weapon. It is used much like a metal sword.",
         "size": 0.8,
