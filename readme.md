@@ -158,7 +158,7 @@ Pour information ce projet utilise docker-compose, ainsi il n'est pas disponnibl
    - Assurez-vous d'avoir Maven installé.
    - Exécutez :
     ```bash
-    mvn clean package
+    mvn dependency:go-offline clean compile package
     ```
 
 ---
@@ -171,11 +171,43 @@ Pour information ce projet utilise docker-compose, ainsi il n'est pas disponnibl
 
 
 ### API et Interaction avec l'Application Web
+Cette API vous permet de gérer les Pokémon et les dresseurs. Elle utilise le protocole HTTP avec le format JSON pour l'échange de données.
+
+#### Principales fonctionnalités
+
+- Ajouter un Pokémon (individuellement ou en lot)
+- Ajouter un dresseur
+- Obtenir tous les dresseurs ou un dresseur spécifique
+- Obtenir l'équipe d'un dresseur spécifique
+- Obtenir tous les Pokémon ou un Pokémon spécifique
+- Renommer un Pokémon ou un dresseur
+- Supprimer un Pokémon ou un dresseur
 
 #### Pokémon
 
 ##### Ajout d'un pokémon
+- **Endpoint**: `POST /pokemon`
+- **Description**: Ajoute un nouveau pokémon.
+###### Request
 
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    {
+      "number": "001",
+      "name": "Bulbasaur",
+      "types": ["Grass", "Poison"],
+      "description": "A strange seed was planted on its back at birth.",
+      "size": 0.7,
+      "weight": 6.9,
+      "genderOptions": ["Male", "Female"],
+      "shinyLock": false,
+      "regions": ["Kanto"]
+    }
+
+###### Exemple prêt a l'emploi:
 ``` bash
 curl -X POST http://localhost:7000/pokemon \
 -H "Content-Type: application/json" \
@@ -192,8 +224,51 @@ curl -X POST http://localhost:7000/pokemon \
 }'
 
 ```
+###### Réponse
 
+- **Statut** :
+    - `201` (Créé) : Le Pokémon a été ajouté avec succès.
+    - `409` (Conflit) : Un Pokémon avec ce numéro de Pokédex existe déjà.
 ##### Ajout de plusieurs pokémon
+
+- **Endpoint**: `POST /pokemon/batch`
+- **Description** : Ajoute plusieurs Pokémon en une seule requête et ignore les doublons qui pourraient être présents dans la requête.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:  
+  Un array d'objet de pokémon, par exemple:
+
+    ```json
+    [
+      {
+        "number": "001",
+        "name": "Bulbasaur",
+        "types": ["Grass", "Poison"],
+        "description": "A strange seed was planted on its back at birth.",
+        "size": 0.7,
+        "weight": 6.9,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+      },
+      {
+        "number": "002",
+        "name": "Ivysaur",
+        "types": ["Grass", "Poison"],
+        "description": "When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",
+        "size": 1.0,
+        "weight": 13.0,
+        "genderOptions": ["Male", "Female"],
+        "shinyLock": false,
+        "regions": ["Kanto"]
+      }
+    ]
+    ```
+
+###### Exemple prêt a l'emploi:
 
 ```bash
 curl -X POST http://localhost:7000/pokemon/batch \
@@ -499,8 +574,27 @@ curl -X POST http://localhost:7000/pokemon/batch \
 ]'
 
 ```
+###### Response
 
+- **Status**:
+    - `201` (Créé): Les pokémon ont été ajouté avec succès.
 ##### Renommer un Pokémon
+- **Endpoint**: `PATCH /pokemon/{number}`
+- **Description**: Met à jour le nom d’un Pokémon spécifique par son numéro. Toute modification de n’importe quel paramètre du Pokémon fonctionne de la même manière.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    {
+      "name": "Piqachou"
+    }
+    ```
+###### Exemple ready to use:
+
 ``` bash
 curl -X PATCH http://localhost:7000/pokemon/025 \
 -H "Content-Type: application/json" \
@@ -509,11 +603,61 @@ curl -X PATCH http://localhost:7000/pokemon/025 \
 }'
 
 ```
+###### Réponse
+
+- **Statut** :
+    - `200` (OK) : Le Pokémon a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun Pokémon avec le numéro spécifié.
+    - `409` (Conflit) : Le Pokémon existe déjà (dans le cas où vous changez le numéro d’un Pokémon pour un qui existe déjà dans le Pokédex).
+##### Supprimer un pokemon
+- **Endpoint**: `DELETE /pokemon/{number}`
+- **Description**: supprime un pokémon spécifique en utilisant son numéro unique.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+    ```json
+    {
+      "number": "001"
+    }
+
+###### Exemple ready to use:
+``` bash
+curl -X DELETE http://localhost:7000/pokemon/{number} \
+-H "Content-Type: application/json" \
+-d '{
+    "number": "001"
+}'
+```
+
+###### Réponse
+
+- **Statut** :
+    - `204` (Pas de contenu) : Le Pokémon a été supprimé avec succès.
+    - `404` (Non trouvé) : Aucun Pokémon avec le numéro spécifié.
 
 #### Dresseur
 
 
 ##### Ajout d'un dresseur
+- **Point de terminaison** : `POST /trainer`
+- **Description** : Ajoute un nouveau dresseur.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    {
+      "name": "Red"
+    }
+    ```
+  
+###### Exemple prêt a l'emploi
+
 
 ``` bash
 curl -X POST https://dai.servecounterstrike.com/trainer \ 
@@ -523,8 +667,34 @@ curl -X POST https://dai.servecounterstrike.com/trainer \
 }'
 
 ```
+###### Réponse
 
+- **Statut** :
+    - `201` (Créé) : Le dresseur a été ajouté avec succès.
+    - `409` (Conflit) : Un dresseur avec ce nom existe déjà.
+  
 ##### Ajout de pokémon à un dresseur
+- **Point de terminaison** : `POST /trainer/{trainerName}/add-pokemons`
+- **Description** : Ajoute des Pokémon à l'équipe d'un dresseur existant en fonction de leurs numéros.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **Path Parameter**:
+    - `trainerName` - le nom du dresseur a qui les pokemon vont être ajouté.
+- **JSON Body**:  
+  Un array d'objet de pokemon contenant leur numéro unique:
+
+    ```json
+    [
+      {"number": "003"},
+      {"number": "006"},
+      {"number": "009"}
+    ]
+    ```
+
+###### Exemple prêt a l'emploi
 
 ``` bash
 curl -X POST https://dai.servecounterstrike.com/trainer/Red/add-pokemons \ 
@@ -536,9 +706,29 @@ curl -X POST https://dai.servecounterstrike.com/trainer/Red/add-pokemons \
 ]'
 
 ```
+###### Réponse
+
+- **Statut** :
+    - `201` (Créé) : Les Pokémon ont été ajoutés avec succès au dresseur.
+    - `400` (Mauvaise requête) : Le Pokémon avec le "numéro" n'existe pas dans le Pokédex.
 
 
 ##### Renommer un dresseur
+- **Point de terminaison** : `PATCH /trainer/{name}`
+- **Description** : Met à jour le nom d’un dresseur spécifique à partir de son nom actuel.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    {
+      "name": "SouljaBoy"
+    }
+    ```
+###### Exemple prêt a l'emploi
 ``` bash
 curl -X PATCH http://localhost:7000/Trainer/Red \
 -H "Content-Type: application/json" \
@@ -547,3 +737,71 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
 }'
 
 ```
+###### Réponse
+
+- **Statut** :
+    - `200` (OK) : Le dresseur a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.  
+
+##### changer l'équipe d'un dresseur
+- **Point de terminaison** : `PATCH /trainer/{name}/pokemons`
+- **Description** : Met à jour l'équipe d'un trainer.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+- **JSON Body**:
+
+    ```json
+    '[
+    {"number": "002"},
+    {"number": "005"},
+    {"number": "008"}
+  ]'
+    ```
+###### Exemple prêt a l'emploi
+``` bash
+curl -X PATCH http://localhost:7000/trainer/Red/pokemons \
+-H "Content-Type: application/json" \
+-d '[
+    {"number": "002"},
+    {"number": "005"},
+    {"number": "008"}
+]'
+
+```
+###### Réponse
+
+- **Statut** :
+    - `200` (OK) : Le dresseur a été renommé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.
+    - `400` (Mauvaise requête) : Pokémon avec le "numéro" non trouvé dans le Pokédex.  
+
+##### Supprimer un dresseur
+- **Endpoint**: `DELETE /trainer/{name}`
+- **Description**: suppprime un dresseur particulier.
+
+###### Request
+
+- **Headers**:
+    - `Content-Type: application/json`
+    ```json
+    {
+      "name": "Red"
+    }
+
+###### Exemple ready to use:
+``` bash
+curl -X DELETE http://localhost:7000/trainer/{name} \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Red"
+}'
+```
+
+###### Réponse
+
+- **Statut** :
+    - `204` (Pas de contenu) : Le dresseur a été supprimé avec succès.
+    - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.  
