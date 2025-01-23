@@ -123,7 +123,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "010",
+        "number": "10",
         "name": "Caterpie",
         "types": ["Bug"],
         "description": "For protection, it releases a horrible stench from the antennae on its head to drive away enemies.",
@@ -266,7 +266,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "023",
+        "number": "23",
         "name": "Ekans",
         "types": ["Poison"],
         "description": "It sneaks through grass without making a sound and strikes unsuspecting prey from behind.",
@@ -288,7 +288,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "regions": ["Kanto"]
     },
     {
-        "number": "025",
+        "number": "25",
         "name": "Pikachu",
         "types": ["Electric"],
         "description": "When several of these Pokémon gather, their electricity could build and cause lightning storms.",
