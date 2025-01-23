@@ -48,9 +48,20 @@ public class API {
                 return;
             }
 
+            // Vérifiez que la liste des Pokémon du Trainer n'est pas vide
+            if (trainer.getPokemons() == null || trainer.getPokemons().isEmpty()) {
+                ctx.status(HttpStatus.BAD_REQUEST).result("Trainer must have at least one Pokémon.");
+                return;
+            }
+
             // Remplissez les Pokémon du Trainer avec les détails du Pokédex
             ArrayList<Pokemon> trainerPokemons = new ArrayList<>();
             for (Pokemon trainerPokemon : trainer.getPokemons()) {
+                if (trainerPokemon.getNumber() == null) {
+                    ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon number is required.");
+                    return;
+                }
+
                 Pokemon pokedexPokemon = pokedex.get(trainerPokemon.getNumber());
                 if (pokedexPokemon != null) {
                     trainerPokemons.add(pokedexPokemon);
@@ -60,10 +71,12 @@ public class API {
                 }
             }
 
-            trainer.addPokemons(trainerPokemons); // Assignez les Pokémon complets au Trainer
+            // Assignez les Pokémon complets au Trainer
+            trainer.addPokemons(trainerPokemons); // Assurez-vous que cette méthode fonctionne correctement
             trainers.put(trainer.getName(), trainer);
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
+
 
         // this part adds pokemon to the team of a specific trainer
         app.post("/trainer/{name}/add-pokemons", ctx -> {
@@ -243,7 +256,7 @@ public class API {
             }
 
             if (htmlCache.get("pokemon-html") != null) {
-                ctx.status(HttpStatus.OK).json(htmlCache.get("pokemon-html"));
+                ctx.html(htmlCache.get("pokemon-html"));
                 return;
             }
 
@@ -309,7 +322,7 @@ public class API {
             }
 
             if (htmlCache.get("trainer-html") != null) {
-                ctx.status(HttpStatus.OK).json(htmlCache.get("trainer-html"));
+                ctx.html(htmlCache.get("trainer-html"));
                 return;
             }
 
