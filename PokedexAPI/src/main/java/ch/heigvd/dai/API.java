@@ -175,7 +175,7 @@ public class API {
             }
         });
 
-        app.get("/trainer/{name}/pokemons", ctx -> {  /// TO-DO check si c'est pas un dup
+        app.get("/trainer/{name}/pokemons", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer;
             Trainer cacheEntry = trainerCache.get(name);
