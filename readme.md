@@ -140,7 +140,7 @@ Pour information ce projet utilise docker-compose, ainsi il n'est pas disponnibl
    ```
 
 3. **Construisez et déployez avec Docker Compose** :
-   ```bash
+   ``` bash
    cd chemin/vers/destination
    docker-compose up --build
    ```
@@ -157,7 +157,7 @@ Pour information ce projet utilise docker-compose, ainsi il n'est pas disponnibl
 1. **Build avec Maven** :
    - Assurez-vous d'avoir Maven installé.
    - Exécutez :
-    ```bash
+    ``` bash
     mvn dependency:go-offline clean compile package
     ```
 
@@ -209,7 +209,7 @@ Cette API vous permet de gérer les Pokémon et les dresseurs. Elle utilise le p
 
 ###### Exemple prêt a l'emploi:
 ``` bash
-curl -X POST http://localhost:7000/pokemon \
+curl -X POST https://dai.servecounterstrike.com/pokemon \
 -H "Content-Type: application/json" \
 -d '{
     "number": "001",
@@ -241,7 +241,7 @@ curl -X POST http://localhost:7000/pokemon \
 - **JSON Body**:  
   Un array d'objet de pokémon, par exemple:
 
-    ```json
+    ``` json
     [
       {
         "number": "001",
@@ -270,8 +270,8 @@ curl -X POST http://localhost:7000/pokemon \
 
 ###### Exemple prêt a l'emploi:
 
-```bash
-curl -X POST http://localhost:7000/pokemon/batch \
+``` bash
+curl -X POST https://dai.servecounterstrike.com/pokemon/batch \
 -H "Content-Type: application/json" \
 -d '[
     {
@@ -589,7 +589,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
     - `Content-Type: application/json`
 - **JSON Body**:
 
-    ```json
+    ``` json
     {
       "name": "Piqachou"
     }
@@ -597,7 +597,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
 ###### Exemple ready to use:
 
 ``` bash
-curl -X PATCH http://localhost:7000/pokemon/025 \
+curl -X PATCH https://dai.servecounterstrike.com/pokemon/025 \
 -H "Content-Type: application/json" \
 -d '{
   "name": "Piqachou"
@@ -625,7 +625,7 @@ curl -X PATCH http://localhost:7000/pokemon/025 \
 
 ###### Exemple ready to use:
 ``` bash
-curl -X DELETE http://localhost:7000/pokemon/{number} \
+curl -X DELETE https://dai.servecounterstrike.com/pokemon/{number} \
 -H "Content-Type: application/json" \
 -d '{
     "number": "001"
@@ -651,7 +651,7 @@ curl -X DELETE http://localhost:7000/pokemon/{number} \
     - `Content-Type: application/json`
 - **JSON Body**:
 
-    ```json
+    ``` json
     {
       "name": "Red"
     }
@@ -687,7 +687,7 @@ curl -X POST https://dai.servecounterstrike.com/trainer \
 - **JSON Body**:  
   Un array d'objet de pokemon contenant leur numéro unique:
 
-    ```json
+    ``` json
     [
       {"number": "003"},
       {"number": "006"},
@@ -724,14 +724,14 @@ curl -X POST https://dai.servecounterstrike.com/trainer/Red/add-pokemons \
     - `Content-Type: application/json`
 - **JSON Body**:
 
-    ```json
+    ``` json
     {
       "name": "SouljaBoy"
     }
     ```
 ###### Exemple prêt a l'emploi
 ``` bash
-curl -X PATCH http://localhost:7000/Trainer/Red \
+curl -X PATCH https://dai.servecounterstrike.com/Trainer/Red \
 -H "Content-Type: application/json" \
 -d '{
   "name": "SouljaBoy"
@@ -755,7 +755,7 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
     - `Content-Type: application/json`
 - **JSON Body**:
 
-    ```json
+    ``` json
     '[
     {"number": "002"},
     {"number": "005"},
@@ -764,7 +764,7 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
     ```
 ###### Exemple prêt a l'emploi
 ``` bash
-curl -X PATCH http://localhost:7000/trainer/Red/pokemons \
+curl -X PATCH https://dai.servecounterstrike.com/trainer/Red/pokemons \
 -H "Content-Type: application/json" \
 -d '[
     {"number": "002"},
@@ -795,7 +795,7 @@ curl -X PATCH http://localhost:7000/trainer/Red/pokemons \
 
 ###### Exemple ready to use:
 ``` bash
-curl -X DELETE http://localhost:7000/trainer/{name} \
+curl -X DELETE https://dai.servecounterstrike.com/trainer/{name} \
 -H "Content-Type: application/json" \
 -d '{
     "name": "Red"
