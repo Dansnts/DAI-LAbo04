@@ -5,29 +5,50 @@ import io.javalin.http.HttpStatus;
 
 import java.util.*;
 
+
+/**
+ * @author: Dani Tiago Faria dos Santos and Nicolas duprat
+ * @brief Classe principale de l'API pour gérer les Pokémon et les dresseurs.
+ * <p>
+ * Cette classe utilise Javalin pour créer une API RESTful permettant de gérer
+ * un Pokédex (liste de Pokémon) et une liste de dresseurs.
+ */
 public class API {
-    private final long TTL = 1800000;     // time in milliseconds
-    Javalin app;
-    int port ;
-    Map<String, Pokemon> pokedex = new HashMap<>();
-    Map<String, Trainer> trainers = new HashMap<>();
-    Cache<String, Pokemon> pokemonCache = new Cache<>();
-    Cache<String, Trainer> trainerCache = new Cache<>();
-    Cache<String, String> htmlCache = new Cache<>();
-    Cache<String, Collection> collectionsCache = new Cache<>();
+    private final long TTL = 300000; // Durée de vie du cache en millisecondes (5 minutes)
+    Javalin app; // Instance de Javalin pour gérer les routes HTTP
+    int port; // Port sur lequel l'API écoute
+    Map<String, Pokemon> pokedex = new HashMap<>(); // Pokédex (numéro -> Pokémon)
+    Map<String, Trainer> trainers = new HashMap<>(); // Liste des dresseurs (nom -> Dresseur)
+    Cache<String, Pokemon> pokemonCache = new Cache<>(); // Cache pour les Pokémon
+    Cache<String, Trainer> trainerCache = new Cache<>(); // Cache pour les dresseurs
+    Cache<String, String> htmlCache = new Cache<>(); // Cache pour les pages HTML
+    Cache<String, Collection> collectionsCache = new Cache<>(); // Cache pour les collections
 
-
-
+    /**
+     * @param port Le port sur lequel l'API doit écouter.
+     * @brief Constructeur de l'API.
+     */
     API(int port) {
         this.app = Javalin.create();
         this.port = port;
     }
 
+    /**
+     * @brief Démarre l'API et configure les routes.
+     */
     void start() {
         app.start(port);
 
         // POST
-        // this part adds a pokemon in the pokedex
+        /**
+         * @brief Ajoute un Pokémon au Pokédex.
+         *
+         * Route : POST /pokemon
+         * Body : Un objet Pokémon au format JSON.
+         *
+         * Si un Pokémon avec le même numéro existe déjà, renvoie une erreur 409 (CONFLICT).
+         * Sinon, ajoute le Pokémon au Pokédex et renvoie une réponse 201 (CREATED).
+         */
         app.post("/pokemon", ctx -> {
             Pokemon newPokemon = ctx.bodyAsClass(Pokemon.class);
             if (pokedex.containsKey(newPokemon.getNumber())) {
@@ -38,21 +59,29 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(newPokemon);
         });
 
-        // this part adds a trainer to the list of trainer, it can also create the trainer with a team of pokemon.
+        /**
+         * @brief Ajoute un dresseur à la liste des dresseurs.
+         *
+         * Route : POST /trainer
+         * Body : Un objet Trainer au format JSON.
+         *
+         * Si un dresseur avec le même nom existe déjà, renvoie une erreur 409 (CONFLICT).
+         * Sinon, ajoute le dresseur à la liste et renvoie une réponse 201 (CREATED).
+         */
         app.post("/trainer", ctx -> {
             Trainer trainer = ctx.bodyAsClass(Trainer.class);
 
-            // Vérifiez si le nom du Trainer est déjà pris
+            // Vérifie si le nom du dresseur est déjà pris
             if (trainers.containsKey(trainer.getName())) {
                 ctx.status(HttpStatus.CONFLICT).result("A Trainer with this name already exists.");
                 return;
             }
 
-            // Remplissez les Pokémon du Trainer avec les détails du Pokédex
+            // Remplit les Pokémon du dresseur avec les détails du Pokédex
             ArrayList<Pokemon> trainerPokemons = new ArrayList<>();
             for (Pokemon trainerPokemon : trainer.getPokemons()) {
                 Pokemon pokedexPokemon = pokedex.get(trainerPokemon.getNumber());
-                if (pokedexPokemon != null) {
+                if (pokedexPokemon != null && pokedexPokemon.getName() != null) {
                     trainerPokemons.add(pokedexPokemon);
                 } else {
                     ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon with number " + trainerPokemon.getNumber() + " not found in Pokédex.");
@@ -60,13 +89,22 @@ public class API {
                 }
             }
 
-            trainer.addPokemons(trainerPokemons); // Assignez les Pokémon complets au Trainer
+            trainer.getPokemons().clear();
+            trainer.addPokemons(trainerPokemons); // Assigne les Pokémon complets au dresseur
             trainers.put(trainer.getName(), trainer);
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
 
-
-        // this part adds pokemon to the team of a specific trainer
+        /**
+         * @brief Ajoute des Pokémon à l'équipe d'un dresseur spécifique.
+         *
+         * Route : POST /trainer/{name}/add-pokemons
+         * Body : Une liste de Pokémon au format JSON.
+         *
+         * Si le dresseur n'existe pas, renvoie une erreur 404 (NOT FOUND).
+         * Si un Pokémon n'existe pas dans le Pokédex, renvoie une erreur 400 (BAD REQUEST).
+         * Sinon, ajoute les Pokémon à l'équipe du dresseur et renvoie une réponse 200 (OK).
+         */
         app.post("/trainer/{name}/add-pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer trainer = trainers.get(trainerName);
@@ -76,7 +114,7 @@ public class API {
                 return;
             }
 
-            // Récupérer les Pokémon à ajouter à partir du corps de la requête
+            // Récupère les Pokémon à ajouter à partir du corps de la requête
             List<Pokemon> pokemonsToAdd = ctx.bodyAsClass(ArrayList.class);
             ArrayList<Pokemon> validatedPokemons = new ArrayList<>();
 
@@ -84,7 +122,7 @@ public class API {
                 Map<String, Object> pokemonMap = (Map<String, Object>) obj;
                 String number = (String) pokemonMap.get("number");
 
-                // Vérifier si le Pokémon existe dans le Pokédex
+                // Vérifie si le Pokémon existe dans le Pokédex
                 Pokemon pokedexPokemon = pokedex.get(number);
                 if (pokedexPokemon != null) {
                     validatedPokemons.add(pokedexPokemon);
@@ -94,13 +132,20 @@ public class API {
                 }
             }
 
-            // Ajouter les Pokémon validés à l'équipe du Trainer
+            // Ajoute les Pokémon validés à l'équipe du dresseur
             trainer.addPokemons(validatedPokemons);
             ctx.status(HttpStatus.OK).json(trainer);
         });
 
-
-        // this part adds a batch of pokemon to the pokedex
+        /**
+         * @brief Ajoute un lot de Pokémon au Pokédex.
+         *
+         * Route : POST /pokemon/batch
+         * Body : Une liste de Pokémon au format JSON.
+         *
+         * Ignore les Pokémon avec des numéros déjà existants dans le Pokédex.
+         * Renvoie une réponse 201 (CREATED) avec la liste des Pokémon ajoutés.
+         */
         app.post("/pokemon/batch", ctx -> {
             List<Pokemon> newPokemons = ctx.bodyAsClass(ArrayList.class);
             List<Pokemon> addedPokemons = new ArrayList<>();
@@ -110,7 +155,7 @@ public class API {
 
                 String number = (String) map.get("number");
                 if (pokedex.containsKey(number)) {
-                    continue; // Skip Pokémon with duplicate numbers
+                    continue; // Ignore les Pokémon avec des numéros déjà existants
                 }
 
                 Pokemon pokemon = new Pokemon();
@@ -131,20 +176,33 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(addedPokemons);
         });
 
-
         // GET
-        //this part get a specific pokemon
+        /**
+         * @brief Renvoie un message de bienvenue.
+         *
+         * Route : GET /
+         *
+         * Renvoie une réponse 200 (OK) avec un message de bienvenue.
+         */
+        app.get("/", ctx -> {
+            String welcomeMessage = "Bienvenue DAI:2024-2025!";
+            ctx.status(HttpStatus.OK).json(Map.of("message", welcomeMessage));
+        });
+
+        /**
+         * @brief Récupère un Pokémon spécifique par son numéro.
+         *
+         * Route : GET /pokemon/{number}
+         *
+         * Si le Pokémon est trouvé, renvoie une réponse 200 (OK) avec le Pokémon.
+         * Sinon, renvoie une erreur 404 (NOT FOUND).
+         */
         app.get("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
-            Pokemon pokemon;
-            Pokemon cacheEntry = pokemonCache.get(number);
+            Pokemon pokemon = pokemonCache.get(number);
 
-            if (cacheEntry != null) {
-                pokemon = cacheEntry;
-            } else {
-
+            if (pokemon == null) {
                 pokemon = pokedex.get(number);
-
                 if (pokemon != null) {
                     pokemonCache.set(number, pokemon, TTL);
                 }
@@ -157,7 +215,16 @@ public class API {
             }
         });
 
-        //this part get a specific trainer
+
+        /**
+         * @brief Récupère un dresseur spécifique par son nom.
+         *
+         * Route : GET /trainer/{name}
+         *
+         * Si le dresseur est trouvé dans le cache, il est renvoyé directement.
+         * Sinon, le dresseur est recherché dans la liste des dresseurs et mis en cache.
+         * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+         */
         app.get("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer;
@@ -166,7 +233,6 @@ public class API {
             if (cacheEntry != null) {
                 trainer = cacheEntry;
             } else {
-
                 trainer = trainers.get(name);
 
                 if (trainer != null) {
@@ -181,7 +247,15 @@ public class API {
             }
         });
 
-        // this part gets the pokemons of a specific trainer
+/**
+ * @brief Récupère les Pokémon d'un dresseur spécifique.
+ *
+ * Route : GET /trainer/{name}/pokemons
+ *
+ * Si le dresseur est trouvé dans le cache, ses Pokémon sont renvoyés directement.
+ * Sinon, le dresseur est recherché dans la liste des dresseurs et mis en cache.
+ * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ */
         app.get("/trainer/{name}/pokemons", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer;
@@ -190,7 +264,6 @@ public class API {
             if (cacheEntry != null) {
                 trainer = cacheEntry;
             } else {
-
                 trainer = trainers.get(name);
 
                 if (trainer != null) {
@@ -205,14 +278,21 @@ public class API {
             }
         });
 
-        // this part gets all the trainer registered
+/**
+ * @brief Récupère tous les dresseurs enregistrés.
+ *
+ * Route : GET /trainer
+ *
+ * Si la liste des dresseurs est trouvée dans le cache, elle est renvoyée directement.
+ * Sinon, la liste est récupérée et mise en cache.
+ * Renvoie une réponse 200 (OK) avec la liste des dresseurs.
+ */
         app.get("/trainer", ctx -> {
-            Collection collections ;
+            Collection collections;
             Collection cacheEntries = collectionsCache.get("trainer");
 
             if (cacheEntries != null) {
                 collections = cacheEntries;
-
             } else {
                 collections = trainers.values();
                 collectionsCache.set("trainer", collections, TTL);
@@ -221,14 +301,21 @@ public class API {
             ctx.status(HttpStatus.OK).json(collections);
         });
 
-        // this part gets all the pokemon registered in the pokedex
+/**
+ * @brief Récupère tous les Pokémon enregistrés dans le Pokédex.
+ *
+ * Route : GET /pokemon
+ *
+ * Si la liste des Pokémon est trouvée dans le cache, elle est renvoyée directement.
+ * Sinon, la liste est récupérée et mise en cache.
+ * Renvoie une réponse 200 (OK) avec la liste des Pokémon.
+ */
         app.get("/pokemon", ctx -> {
-            Collection collections ;
+            Collection collections;
             Collection cacheEntries = collectionsCache.get("pokemon");
 
             if (cacheEntries != null) {
                 collections = cacheEntries;
-
             } else {
                 collections = pokedex.values();
                 collectionsCache.set("pokemon", collections, TTL);
@@ -236,7 +323,16 @@ public class API {
             ctx.status(HttpStatus.OK).json(collections);
         });
 
-        // Endpoint to generate an html page for the pokedex
+/**
+ * @brief Génère une page HTML pour afficher le Pokédex.
+ *
+ * Route : GET /pokemon-html
+ *
+ * Si le Pokédex est vide, renvoie un message indiquant qu'aucun Pokémon n'a été trouvé.
+ * Si la page HTML est déjà en cache, elle est renvoyée directement.
+ * Sinon, la page HTML est générée dynamiquement et mise en cache.
+ * Renvoie une réponse 200 (OK) avec la page HTML.
+ */
         app.get("/pokemon-html", ctx -> {
             if (pokedex.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Pokémon found in the Pokédex.");
@@ -302,10 +398,19 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
-            htmlCache.set("pokemon-html", htmlBuilder.toString(), TTL );
+            htmlCache.set("pokemon-html", htmlBuilder.toString(), TTL);
         });
 
-        // Endpoint to generate an html page for the trainers
+/**
+ * @brief Génère une page HTML pour afficher la liste des dresseurs.
+ *
+ * Route : GET /trainer-html
+ *
+ * Si la liste des dresseurs est vide, renvoie un message indiquant qu'aucun dresseur n'a été trouvé.
+ * Si la page HTML est déjà en cache, elle est renvoyée directement.
+ * Sinon, la page HTML est générée dynamiquement et mise en cache.
+ * Renvoie une réponse 200 (OK) avec la page HTML.
+ */
         app.get("/trainer-html", ctx -> {
             if (trainers.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Trainers found.");
@@ -371,10 +476,19 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
-            htmlCache.set("trainer-html", htmlBuilder.toString(), TTL );
+            htmlCache.set("trainer-html", htmlBuilder.toString(), TTL);
         });
 
-        // Endpoint to generate an html page for the team of a specific trainer
+/**
+ * @brief Génère une page HTML pour afficher l'équipe d'un dresseur spécifique.
+ *
+ * Route : GET /trainer/{name}/team-html
+ *
+ * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ * Si la page HTML est déjà en cache, elle est renvoyée directement.
+ * Sinon, la page HTML est générée dynamiquement et mise en cache.
+ * Renvoie une réponse 200 (OK) avec la page HTML.
+ */
         app.get("/trainer/{name}/team-html", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer = trainers.get(name);
@@ -446,12 +560,21 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
-            htmlCache.set("team-html", htmlBuilder.toString(), TTL );
+            htmlCache.set("team-html", htmlBuilder.toString(), TTL);
         });
 
 
-        // PATCH
-        // this part changes a specific pokemon from the pokedex
+        /**
+         * @brief Met à jour un Pokémon spécifique dans le Pokédex.
+         *
+         * Route : PATCH /pokemon/{number}
+         *
+         * Si le Pokémon existe, ses attributs sont mis à jour avec les données fournies dans le corps de la requête.
+         * Si le numéro du Pokémon est modifié, vérifie qu'aucun autre Pokémon n'utilise déjà ce numéro.
+         * Renvoie une réponse 200 (OK) avec le Pokémon mis à jour.
+         * Si le Pokémon n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+         * Si un conflit survient (numéro déjà utilisé), renvoie une erreur 409 (CONFLICT).
+         */
         app.patch("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             Pokemon existingPokemon = pokedex.get(number);
@@ -482,14 +605,22 @@ public class API {
             }
         });
 
-        // this part changes the name of a specific trainer
+/**
+ * @brief Met à jour le nom d'un dresseur spécifique.
+ *
+ * Route : PATCH /trainer/{name}
+ *
+ * Si le dresseur existe, son nom est mis à jour avec les données fournies dans le corps de la requête.
+ * Si le nouveau nom est déjà utilisé par un autre dresseur, renvoie une erreur 409 (CONFLICT).
+ * Renvoie une réponse 200 (OK) avec un message de succès.
+ * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ */
         app.patch("/trainer/{name}", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer existingTrainer = trainers.get(trainerName);
 
             if (existingTrainer != null) {
                 Trainer updatedData = ctx.bodyAsClass(Trainer.class);
-
 
                 if (updatedData.getName() != null && !updatedData.getName().equals(trainerName)) {
                     String newName = updatedData.getName();
@@ -503,20 +634,28 @@ public class API {
                     }
                 }
 
-
                 ctx.status(HttpStatus.OK).result("Trainer updated successfully.");
             } else {
                 ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
             }
         });
 
-        // this part changes the team of a specific trainer
+/**
+ * @brief Met à jour l'équipe d'un dresseur spécifique.
+ *
+ * Route : PATCH /trainer/{name}/pokemons
+ *
+ * Si le dresseur existe, son équipe est remplacée par les Pokémon fournis dans le corps de la requête.
+ * Chaque Pokémon doit exister dans le Pokédex.
+ * Renvoie une réponse 200 (OK) avec le dresseur mis à jour.
+ * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ * Si un Pokémon n'existe pas dans le Pokédex, renvoie une erreur 400 (BAD REQUEST).
+ */
         app.patch("/trainer/{name}/pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer existingTrainer = trainers.get(trainerName);
 
             if (existingTrainer != null) {
-
                 List<Pokemon> pokemonsToAdd = ctx.bodyAsClass(ArrayList.class);
                 ArrayList<Pokemon> validatedPokemons = new ArrayList<>();
                 existingTrainer.getPokemons().clear();
@@ -525,7 +664,7 @@ public class API {
                     Map<String, Object> pokemonMap = (Map<String, Object>) obj;
                     String number = (String) pokemonMap.get("number");
 
-                    // Vérifier si le Pokémon existe dans le Pokédex
+                    // Vérifie si le Pokémon existe dans le Pokédex
                     Pokemon pokedexPokemon = pokedex.get(number);
                     if (pokedexPokemon != null) {
                         validatedPokemons.add(pokedexPokemon);
@@ -542,11 +681,15 @@ public class API {
             }
         });
 
-
-
-
-        // DELETE
-        // this part delete a specific pokemon
+/**
+ * @brief Supprime un Pokémon spécifique du Pokédex.
+ *
+ * Route : DELETE /pokemon/{number}
+ *
+ * Si le Pokémon existe, il est supprimé du Pokédex.
+ * Renvoie une réponse 204 (NO CONTENT) en cas de succès.
+ * Si le Pokémon n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ */
         app.delete("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             if (pokedex.remove(number) != null) {
@@ -556,7 +699,15 @@ public class API {
             }
         });
 
-        // this part delete a specific trainer
+/**
+ * @brief Supprime un dresseur spécifique.
+ *
+ * Route : DELETE /trainer/{name}
+ *
+ * Si le dresseur existe, il est supprimé de la liste des dresseurs.
+ * Renvoie une réponse 204 (NO CONTENT) en cas de succès.
+ * Si le dresseur n'est pas trouvé, renvoie une erreur 404 (NOT FOUND).
+ */
         app.delete("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
             if (trainers.remove(name) != null) {
@@ -564,8 +715,6 @@ public class API {
             } else {
                 ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found");
             }
-
         });
     }
-
 }
