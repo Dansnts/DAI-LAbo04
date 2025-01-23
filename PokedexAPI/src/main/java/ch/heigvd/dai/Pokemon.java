@@ -2,6 +2,11 @@ package ch.heigvd.dai;
 
 import java.util.List;
 
+/**
+ *author: Dani Tiago Faria dos Santos and Nicolas duprat
+ * this class is the pokemon that we store in our pokedex
+ * */
+
 public class Pokemon {
     private String number; // Identifiant unique (numéro de Pokédex)
     private String name;

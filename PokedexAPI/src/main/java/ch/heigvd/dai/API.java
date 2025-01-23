@@ -27,6 +27,7 @@ public class API {
         app.start(port);
 
         // POST
+        // this part adds a pokemon in the pokedex
         app.post("/pokemon", ctx -> {
             Pokemon newPokemon = ctx.bodyAsClass(Pokemon.class);
             if (pokedex.containsKey(newPokemon.getNumber())) {
@@ -37,6 +38,7 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(newPokemon);
         });
 
+        // this part adds a trainer to the list of trainer, it can also create the trainer with a team of pokemon.
         app.post("/trainer", ctx -> {
             Trainer trainer = ctx.bodyAsClass(Trainer.class);
 
@@ -63,6 +65,7 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
 
+        // this part adds pokemon to the team of a specific trainer
         app.post("/trainer/{name}/add-pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer trainer = trainers.get(trainerName);
@@ -96,7 +99,7 @@ public class API {
         });
 
 
-
+        // this part adds a batch of pokemon to the pokedex
         app.post("/pokemon/batch", ctx -> {
             List<Pokemon> newPokemons = ctx.bodyAsClass(ArrayList.class);
             List<Pokemon> addedPokemons = new ArrayList<>();
@@ -129,6 +132,7 @@ public class API {
 
 
         // GET
+        //this part get a specific pokemon
         app.get("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             Pokemon pokemon;
@@ -152,6 +156,7 @@ public class API {
             }
         });
 
+        //this part get a specific trainer
         app.get("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer;
@@ -175,6 +180,7 @@ public class API {
             }
         });
 
+        // this part gets the pokemons of a specific trainer
         app.get("/trainer/{name}/pokemons", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer;
@@ -198,6 +204,7 @@ public class API {
             }
         });
 
+        // this part gets all the trainer registered
         app.get("/trainer", ctx -> {
             Collection collections ;
             Collection cacheEntries = collectionsCache.get("trainer");
@@ -213,6 +220,7 @@ public class API {
             ctx.status(HttpStatus.OK).json(collections);
         });
 
+        // this part gets all the pokemon registered in the pokedex
         app.get("/pokemon", ctx -> {
             Collection collections ;
             Collection cacheEntries = collectionsCache.get("pokemon");
@@ -227,7 +235,7 @@ public class API {
             ctx.status(HttpStatus.OK).json(collections);
         });
 
-        // Endpoint pour générer une page HTML avec un tableau
+        // Endpoint to generate an html page for the pokedex
         app.get("/pokemon-html", ctx -> {
             if (pokedex.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Pokémon found in the Pokédex.");
@@ -293,6 +301,7 @@ public class API {
             htmlCache.set("pokemon-html", htmlBuilder.toString(), TTL );
         });
 
+        // Endpoint to generate an html page for the trainers
         app.get("/trainer-html", ctx -> {
             if (trainers.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Trainers found.");
@@ -361,7 +370,7 @@ public class API {
             htmlCache.set("trainer-html", htmlBuilder.toString(), TTL );
         });
 
-
+        // Endpoint to generate an html page for the team of a specific trainer
         app.get("/trainer/{name}/team-html", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer = trainers.get(name);
@@ -438,6 +447,7 @@ public class API {
 
 
         // PATCH
+        // this part changes a specific pokemon from the pokedex
         app.patch("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             Pokemon existingPokemon = pokedex.get(number);
@@ -468,6 +478,7 @@ public class API {
             }
         });
 
+        // this part changes the name of a specific trainer
         app.patch("/trainer/{name}", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer existingTrainer = trainers.get(trainerName);
@@ -475,21 +486,19 @@ public class API {
             if (existingTrainer != null) {
                 Trainer updatedData = ctx.bodyAsClass(Trainer.class);
 
-                // Update trainer's name if provided and different
+
                 if (updatedData.getName() != null && !updatedData.getName().equals(trainerName)) {
                     String newName = updatedData.getName();
                     if (trainers.get(newName) == null) {
-                        existingTrainer.setName(newName);  // Update name
-                        trainers.put(newName, existingTrainer);  // Reassign to new name
-                        trainers.remove(trainerName);  // Remove old name from trainers map
+                        existingTrainer.setName(newName);
+                        trainers.put(newName, existingTrainer);
+                        trainers.remove(trainerName);
                     } else {
                         ctx.status(HttpStatus.CONFLICT).result("Trainer with this name already exists.");
                         return;
                     }
                 }
 
-                // Update other properties of the Trainer if needed
-                // For example, if there are other fields to update, do it here.
 
                 ctx.status(HttpStatus.OK).result("Trainer updated successfully.");
             } else {
@@ -497,6 +506,7 @@ public class API {
             }
         });
 
+        // this part changes the team of a specific trainer
         app.patch("/trainer/{name}/pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer existingTrainer = trainers.get(trainerName);
@@ -532,6 +542,7 @@ public class API {
 
 
         // DELETE
+        // this part delete a specific pokemon
         app.delete("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             if (pokedex.remove(number) != null) {
@@ -541,6 +552,7 @@ public class API {
             }
         });
 
+        // this part delete a specific trainer
         app.delete("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
             if (trainers.remove(name) != null) {
