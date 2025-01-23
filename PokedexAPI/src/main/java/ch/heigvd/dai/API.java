@@ -65,6 +65,7 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
 
+
         // this part adds pokemon to the team of a specific trainer
         app.post("/trainer/{name}/add-pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
@@ -243,7 +244,7 @@ public class API {
             }
 
             if (htmlCache.get("pokemon-html") != null) {
-                ctx.status(HttpStatus.OK).json(htmlCache.get("pokemon-html"));
+                ctx.html(htmlCache.get("pokemon-html"));
                 return;
             }
 
@@ -312,7 +313,7 @@ public class API {
             }
 
             if (htmlCache.get("trainer-html") != null) {
-                ctx.status(HttpStatus.OK).json(htmlCache.get("trainer-html"));
+                ctx.html(htmlCache.get("trainer-html"));
                 return;
             }
 
