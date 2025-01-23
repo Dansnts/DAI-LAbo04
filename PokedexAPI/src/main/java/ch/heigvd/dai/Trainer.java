@@ -2,6 +2,11 @@ package ch.heigvd.dai;
 
 import java.util.ArrayList;
 
+/**
+ *author: Dani Tiago Faria dos Santos and Nicolas duprat
+ * this class is the trainer, that has a team and a name
+ * */
+
 public class Trainer {
     private String name; // Champ privé pour respecter les bonnes pratiques
     private ArrayList<Pokemon> pokemons;

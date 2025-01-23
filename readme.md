@@ -738,6 +738,7 @@ curl -X PATCH http://localhost:7000/Trainer/Red \
 }'
 
 ```
+
 ###### Réponse
 
 - **Statut** :
@@ -806,3 +807,4 @@ curl -X DELETE http://localhost:7000/trainer/{name} \
 - **Statut** :
     - `204` (Pas de contenu) : Le dresseur a été supprimé avec succès.
     - `404` (Non trouvé) : Aucun dresseur avec le nom spécifié.  
+

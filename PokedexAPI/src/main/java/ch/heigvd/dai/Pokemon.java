@@ -5,6 +5,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ *author: Dani Tiago Faria dos Santos and Nicolas duprat
+ * this class is the pokemon that we store in our pokedex
+ * */
+
 public class Pokemon {
     private String number; // Identifiant unique (numéro de Pokédex)
     private String name;

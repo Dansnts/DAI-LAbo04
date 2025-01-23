@@ -2,16 +2,19 @@ package ch.heigvd.dai;
 
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class API {
+    private final long TTL = 1800000;     // time in milliseconds
     Javalin app;
     int port ;
     Map<String, Pokemon> pokedex = new HashMap<>();
     Map<String, Trainer> trainers = new HashMap<>();
+    Cache<String, Pokemon> pokemonCache = new Cache<>();
+    Cache<String, Trainer> trainerCache = new Cache<>();
+    Cache<String, String> htmlCache = new Cache<>();
+    Cache<String, Collection> collectionsCache = new Cache<>();
 
 
 
@@ -24,6 +27,7 @@ public class API {
         app.start(port);
 
         // POST
+        // this part adds a pokemon in the pokedex
         app.post("/pokemon", ctx -> {
             Pokemon newPokemon = ctx.bodyAsClass(Pokemon.class);
             if (pokedex.containsKey(newPokemon.getNumber())) {
@@ -34,6 +38,7 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(newPokemon);
         });
 
+        // this part adds a trainer to the list of trainer, it can also create the trainer with a team of pokemon.
         app.post("/trainer", ctx -> {
             Trainer trainer = ctx.bodyAsClass(Trainer.class);
 
@@ -60,6 +65,7 @@ public class API {
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
 
+        // this part adds pokemon to the team of a specific trainer
         app.post("/trainer/{name}/add-pokemons", ctx -> {
             String trainerName = ctx.pathParam("name");
             Trainer trainer = trainers.get(trainerName);
@@ -93,7 +99,7 @@ public class API {
         });
 
 
-
+        // this part adds a batch of pokemon to the pokedex
         app.post("/pokemon/batch", ctx -> {
             List<Pokemon> newPokemons = ctx.bodyAsClass(ArrayList.class);
             List<Pokemon> addedPokemons = new ArrayList<>();
@@ -126,9 +132,23 @@ public class API {
 
 
         // GET
+        //this part get a specific pokemon
         app.get("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
-            Pokemon pokemon = pokedex.get(number);
+            Pokemon pokemon;
+            Pokemon cacheEntry = pokemonCache.get(number);
+
+            if (cacheEntry != null) {
+                pokemon = cacheEntry;
+            } else {
+
+                pokemon = pokedex.get(number);
+
+                if (pokemon != null) {
+                    pokemonCache.set(number, pokemon, TTL);
+                }
+            }
+
             if (pokemon != null) {
                 ctx.status(HttpStatus.OK).json(pokemon);
             } else {
@@ -136,9 +156,23 @@ public class API {
             }
         });
 
+        //this part get a specific trainer
         app.get("/trainer/{name}", ctx -> {
             String name = ctx.pathParam("name");
-            Trainer trainer = trainers.get(name);
+            Trainer trainer;
+            Trainer cacheEntry = trainerCache.get(name);
+
+            if (cacheEntry != null) {
+                trainer = cacheEntry;
+            } else {
+
+                trainer = trainers.get(name);
+
+                if (trainer != null) {
+                    trainerCache.set(name, trainer, TTL);
+                }
+            }
+
             if (trainer != null) {
                 ctx.status(HttpStatus.OK).json(trainer);
             } else {
@@ -146,9 +180,23 @@ public class API {
             }
         });
 
+        // this part gets the pokemons of a specific trainer
         app.get("/trainer/{name}/pokemons", ctx -> {
             String name = ctx.pathParam("name");
-            Trainer trainer = trainers.get(name);
+            Trainer trainer;
+            Trainer cacheEntry = trainerCache.get(name);
+
+            if (cacheEntry != null) {
+                trainer = cacheEntry;
+            } else {
+
+                trainer = trainers.get(name);
+
+                if (trainer != null) {
+                    trainerCache.set(name, trainer, TTL);
+                }
+            }
+
             if (trainer != null) {
                 ctx.status(HttpStatus.OK).json(trainer);
             } else {
@@ -156,13 +204,46 @@ public class API {
             }
         });
 
-        app.get("/trainer", ctx -> ctx.status(HttpStatus.OK).json(trainers.values()));
-        app.get("/pokemon", ctx -> ctx.status(HttpStatus.OK).json(pokedex.values()));
+        // this part gets all the trainer registered
+        app.get("/trainer", ctx -> {
+            Collection collections ;
+            Collection cacheEntries = collectionsCache.get("trainer");
 
-        // Endpoint pour générer une page HTML avec un tableau
+            if (cacheEntries != null) {
+                collections = cacheEntries;
+
+            } else {
+                collections = trainers.values();
+                collectionsCache.set("trainer", collections, TTL);
+            }
+
+            ctx.status(HttpStatus.OK).json(collections);
+        });
+
+        // this part gets all the pokemon registered in the pokedex
+        app.get("/pokemon", ctx -> {
+            Collection collections ;
+            Collection cacheEntries = collectionsCache.get("pokemon");
+
+            if (cacheEntries != null) {
+                collections = cacheEntries;
+
+            } else {
+                collections = pokedex.values();
+                collectionsCache.set("pokemon", collections, TTL);
+            }
+            ctx.status(HttpStatus.OK).json(collections);
+        });
+
+        // Endpoint to generate an html page for the pokedex
         app.get("/pokemon-html", ctx -> {
             if (pokedex.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Pokémon found in the Pokédex.");
+                return;
+            }
+
+            if (htmlCache.get("pokemon-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("pokemon-html"));
                 return;
             }
 
@@ -220,11 +301,18 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("pokemon-html", htmlBuilder.toString(), TTL );
         });
 
+        // Endpoint to generate an html page for the trainers
         app.get("/trainer-html", ctx -> {
             if (trainers.isEmpty()) {
                 ctx.status(HttpStatus.OK).result("No Trainers found.");
+                return;
+            }
+
+            if (htmlCache.get("trainer-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("trainer-html"));
                 return;
             }
 
@@ -282,15 +370,21 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("trainer-html", htmlBuilder.toString(), TTL );
         });
 
-
+        // Endpoint to generate an html page for the team of a specific trainer
         app.get("/trainer/{name}/team-html", ctx -> {
             String name = ctx.pathParam("name");
             Trainer trainer = trainers.get(name);
 
             if (trainer == null) {
                 ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
+                return;
+            }
+
+            if (htmlCache.get("team-html") != null) {
+                ctx.status(HttpStatus.OK).json(htmlCache.get("team-html"));
                 return;
             }
 
@@ -351,15 +445,27 @@ public class API {
             htmlBuilder.append("</html>");
 
             ctx.html(htmlBuilder.toString());
+            htmlCache.set("team-html", htmlBuilder.toString(), TTL );
         });
 
 
         // PATCH
+        // this part changes a specific pokemon from the pokedex
         app.patch("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             Pokemon existingPokemon = pokedex.get(number);
             if (existingPokemon != null) {
                 Pokemon updatedData = ctx.bodyAsClass(Pokemon.class);
+                if (updatedData.getNumber() != null && !updatedData.getNumber().equals(number)) {
+                    String newNumber = updatedData.getNumber();
+                    if (pokedex.get(newNumber) == null) {
+                        existingPokemon.setNumber(newNumber);
+                        pokedex.put(newNumber, existingPokemon);
+                        pokedex.remove(number);
+                    } else {
+                        ctx.status(HttpStatus.CONFLICT).result("Pokemon already exists.");
+                    }
+                }
                 if (updatedData.getName() != null) existingPokemon.setName(updatedData.getName());
                 if (updatedData.getTypes() != null) existingPokemon.setTypes(updatedData.getTypes());
                 if (updatedData.getDescription() != null) existingPokemon.setDescription(updatedData.getDescription());
@@ -375,7 +481,71 @@ public class API {
             }
         });
 
+        // this part changes the name of a specific trainer
+        app.patch("/trainer/{name}", ctx -> {
+            String trainerName = ctx.pathParam("name");
+            Trainer existingTrainer = trainers.get(trainerName);
+
+            if (existingTrainer != null) {
+                Trainer updatedData = ctx.bodyAsClass(Trainer.class);
+
+
+                if (updatedData.getName() != null && !updatedData.getName().equals(trainerName)) {
+                    String newName = updatedData.getName();
+                    if (trainers.get(newName) == null) {
+                        existingTrainer.setName(newName);
+                        trainers.put(newName, existingTrainer);
+                        trainers.remove(trainerName);
+                    } else {
+                        ctx.status(HttpStatus.CONFLICT).result("Trainer with this name already exists.");
+                        return;
+                    }
+                }
+
+
+                ctx.status(HttpStatus.OK).result("Trainer updated successfully.");
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
+            }
+        });
+
+        // this part changes the team of a specific trainer
+        app.patch("/trainer/{name}/pokemons", ctx -> {
+            String trainerName = ctx.pathParam("name");
+            Trainer existingTrainer = trainers.get(trainerName);
+
+            if (existingTrainer != null) {
+
+                List<Pokemon> pokemonsToAdd = ctx.bodyAsClass(ArrayList.class);
+                ArrayList<Pokemon> validatedPokemons = new ArrayList<>();
+                existingTrainer.getPokemons().clear();
+
+                for (Object obj : pokemonsToAdd) {
+                    Map<String, Object> pokemonMap = (Map<String, Object>) obj;
+                    String number = (String) pokemonMap.get("number");
+
+                    // Vérifier si le Pokémon existe dans le Pokédex
+                    Pokemon pokedexPokemon = pokedex.get(number);
+                    if (pokedexPokemon != null) {
+                        validatedPokemons.add(pokedexPokemon);
+                    } else {
+                        ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon with number " + number + " not found in Pokédex.");
+                        return;
+                    }
+                }
+
+                existingTrainer.addPokemons(validatedPokemons);
+                ctx.status(HttpStatus.OK).json(existingTrainer);
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found");
+            }
+        });
+
+
+
+
         // DELETE
+        // this part delete a specific pokemon
         app.delete("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
             if (pokedex.remove(number) != null) {
@@ -383,6 +553,17 @@ public class API {
             } else {
                 ctx.status(HttpStatus.NOT_FOUND).result("Pokémon not found");
             }
+        });
+
+        // this part delete a specific trainer
+        app.delete("/trainer/{name}", ctx -> {
+            String name = ctx.pathParam("name");
+            if (trainers.remove(name) != null) {
+                ctx.status(HttpStatus.NO_CONTENT);
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found");
+            }
+
         });
     }
 
