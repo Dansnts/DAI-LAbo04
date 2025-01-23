@@ -8,4 +8,4 @@ WORKDIR /opt/app
 COPY pokemon-api.jar .
 
 # Définir la commande de démarrage
-CMD ["java", "-jar", "pokemon-api.jar", "-p", "6969"]
+CMD ["java", "-jar", "pokemon-api.jar", "-p", "7000"]

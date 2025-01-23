@@ -130,7 +130,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
 # Ajout d'un dresseur
 
 ``` bash
-curl -X POST http://localhost:7000/trainer \
+curl -X POST https://dai.servecounterstrike.com/trainer \ 
 -H "Content-Type: application/json" \
 -d '{
     "name": "Red"
@@ -139,14 +139,18 @@ curl -X POST http://localhost:7000/trainer \
 ```
 
 
-# Ajout d'un dresseur
+# Ajout de pokémon à un dresseur
 
 ``` bash
-curl -X POST http://localhost:7000/trainer \
+curl -X POST https://dai.servecounterstrike.com/trainer/Red/add-pokemons \ 
 -H "Content-Type: application/json" \
--d '{
-    "name": "Red"
-}'
+-d '[
+    {"number": "003"},
+    {"number": "006"},
+    {"number": "009"}
+]'
+
+
 
 ```
 
