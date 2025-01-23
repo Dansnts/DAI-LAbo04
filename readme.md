@@ -121,7 +121,7 @@ curl -X POST http://localhost:7000/pokemon/batch \
         "genderOptions": ["Male", "Female"],
         "shinyLock": false,
         "regions": ["Kanto"]
-    }
+    },
     {
         "number": "010",
         "name": "Caterpie",
