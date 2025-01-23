@@ -1,52 +1,89 @@
 package ch.heigvd.dai;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- *author: Dani Tiago Faria dos Santos and Nicolas duprat
- * this class is the trainer, that has a team and a name
- * */
-
+ * @author Dani Tiago Faria dos Santos et Nicolas Duprat
+ * @brief Classe représentant un dresseur avec une équipe de Pokémon.
+ *
+ * Cette classe contient les informations d'un dresseur, telles que son nom et son équipe de Pokémon.
+ * Elle permet d'ajouter, de supprimer et d'afficher les Pokémon associés au dresseur.
+ */
 public class Trainer {
-    private String name; // Champ privé pour respecter les bonnes pratiques
-    private ArrayList<Pokemon> pokemons;
+    private String name; // Nom du dresseur
+    private Set<Pokemon> pokemons; // Équipe de Pokémon du dresseur
 
-    // Constructeur par défaut (nécessaire pour Jackson)
+    /**
+     * @brief Constructeur par défaut.
+     *
+     * Initialise un dresseur avec une équipe de Pokémon vide.
+     * Ce constructeur est nécessaire pour la désérialisation JSON avec Jackson.
+     */
     public Trainer() {
-        this.pokemons = new ArrayList<>();
+        this.pokemons = new HashSet<>();
     }
 
-    // Constructeur avec un argument (optionnel, mais utile)
+    /**
+     * @brief Constructeur avec un nom.
+     *
+     * Initialise un dresseur avec un nom spécifié et une équipe de Pokémon vide.
+     *
+     * @param name Le nom du dresseur.
+     */
     public Trainer(String name) {
         this.name = name;
-        this.pokemons = new ArrayList<>();
+        this.pokemons = new HashSet<>();
     }
 
-    // Getter pour `name` (nécessaire pour Jackson)
+    /**
+     * @brief Retourne le nom du dresseur.
+     *
+     * @return Le nom du dresseur.
+     */
     public String getName() {
         return name;
     }
 
-    // Setter pour `name` (nécessaire pour Jackson)
+    /**
+     * @brief Définit le nom du dresseur.
+     *
+     * @param name Le nom du dresseur.
+     */
     public void setName(String name) {
         this.name = name;
     }
 
-    // Getter pour `pokemons` (nécessaire si vous voulez retourner les Pokémon associés)
-    public ArrayList<Pokemon> getPokemons() {
+    /**
+     * @brief Retourne l'équipe de Pokémon du dresseur.
+     *
+     * @return Un ensemble de Pokémon associés au dresseur.
+     */
+    public Set<Pokemon> getPokemons() {
         return pokemons;
     }
 
-    // Setter pour `pokemons` (nécessaire pour Jackson si vous voulez recevoir des Pokémon)
-    public void addPokemons(ArrayList<Pokemon> pokemons) {
-        for (Pokemon pokemon : pokemons) {
-            if(!this.pokemons.contains(pokemon)) {
+    /**
+     * @brief Ajoute des Pokémon à l'équipe du dresseur.
+     *
+     * Cette méthode ajoute une liste de Pokémon à l'équipe du dresseur, en évitant les doublons.
+     *
+     * @param pokes La liste des Pokémon à ajouter.
+     */
+    public void addPokemons(ArrayList<Pokemon> pokes) {
+        for (Pokemon pokemon : pokes) {
+            if (pokemon != null && !this.pokemons.contains(pokemon)) {
                 this.pokemons.add(pokemon);
             }
         }
     }
 
-    // Méthode pour afficher les Pokémon
+    /**
+     * @brief Affiche les Pokémon de l'équipe du dresseur.
+     *
+     * Si l'équipe est vide, un message indiquant qu'aucun Pokémon n'a été trouvé est affiché.
+     */
     public void showPokemons() {
         if (!pokemons.isEmpty()) {
             System.out.println(name + " pokemons: ");
@@ -60,7 +97,11 @@ public class Trainer {
         }
     }
 
-    // Méthode pour retirer un Pokémon
+    /**
+     * @brief Retire un Pokémon de l'équipe du dresseur.
+     *
+     * @param pokemon Le Pokémon à retirer.
+     */
     public void removePokemon(Pokemon pokemon) {
         pokemons.remove(pokemon);
     }
