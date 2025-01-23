@@ -48,20 +48,9 @@ public class API {
                 return;
             }
 
-            // Vérifiez que la liste des Pokémon du Trainer n'est pas vide
-            if (trainer.getPokemons() == null || trainer.getPokemons().isEmpty()) {
-                ctx.status(HttpStatus.BAD_REQUEST).result("Trainer must have at least one Pokémon.");
-                return;
-            }
-
             // Remplissez les Pokémon du Trainer avec les détails du Pokédex
             ArrayList<Pokemon> trainerPokemons = new ArrayList<>();
             for (Pokemon trainerPokemon : trainer.getPokemons()) {
-                if (trainerPokemon.getNumber() == null) {
-                    ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon number is required.");
-                    return;
-                }
-
                 Pokemon pokedexPokemon = pokedex.get(trainerPokemon.getNumber());
                 if (pokedexPokemon != null) {
                     trainerPokemons.add(pokedexPokemon);
@@ -71,8 +60,7 @@ public class API {
                 }
             }
 
-            // Assignez les Pokémon complets au Trainer
-            trainer.addPokemons(trainerPokemons); // Assurez-vous que cette méthode fonctionne correctement
+            trainer.addPokemons(trainerPokemons); // Assignez les Pokémon complets au Trainer
             trainers.put(trainer.getName(), trainer);
             ctx.status(HttpStatus.CREATED).json(trainer);
         });
