@@ -177,6 +177,7 @@ public class API {
             htmlBuilder.append("table { width: 100%; border-collapse: collapse; }");
             htmlBuilder.append("th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }");
             htmlBuilder.append("th { background-color: #f4f4f4; }");
+            htmlBuilder.append("img { max-width: 150px; max-height: 150px; }");
             htmlBuilder.append("</style>");
             htmlBuilder.append("</head>");
             htmlBuilder.append("<body>");
@@ -186,6 +187,7 @@ public class API {
             htmlBuilder.append("<tr>");
             htmlBuilder.append("<th>Number</th>");
             htmlBuilder.append("<th>Name</th>");
+            htmlBuilder.append("<th>Image</th>");
             htmlBuilder.append("<th>Types</th>");
             htmlBuilder.append("<th>Description</th>");
             htmlBuilder.append("<th>Size</th>");
@@ -201,6 +203,7 @@ public class API {
                 htmlBuilder.append("<tr>");
                 htmlBuilder.append("<td>").append(pokemon.getNumber()).append("</td>");
                 htmlBuilder.append("<td>").append(pokemon.getName()).append("</td>");
+                htmlBuilder.append("<td><img src='https://img.pokemondb.net/artwork/large/").append(pokemon.getName().toLowerCase()).append(".jpg' alt='Image of ").append(pokemon.getName()).append("'></td>");
                 htmlBuilder.append("<td>").append(String.join(", ", pokemon.getTypes())).append("</td>");
                 htmlBuilder.append("<td>").append(pokemon.getDescription()).append("</td>");
                 htmlBuilder.append("<td>").append(pokemon.getSize()).append(" m</td>");

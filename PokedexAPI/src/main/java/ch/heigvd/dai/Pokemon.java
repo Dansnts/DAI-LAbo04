@@ -1,6 +1,9 @@
 package ch.heigvd.dai;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class Pokemon {
     private String number; // Identifiant unique (numéro de Pokédex)
@@ -84,4 +87,6 @@ public class Pokemon {
     public void setRegions(List<String> regions) {
         this.regions = regions;
     }
+
+
 }
