@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  app:
+    build:
+      context: .  # Répertoire actuel pour trouver le Dockerfile
+      dockerfile: Dockerfile  # Nom de votre fichier Dockerfile
+    container_name: pokemon-app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pokemon-app.rule=Host(`pokemon.dai`)"  # Remplacez par votre domaine
+      - "traefik.http.services.pokemon-app.loadbalancer.server.port=7000"  # Port interne de votre application
+    ports:
+      - "7000:7000"  # Seulement pour le développement, Traefik gère l'accès en production
+    volumes:
+      - ./pokemon-api.jar:/opt/app/pokemon-api.jar  # Assurez-vous que le JAR est dans le bon chemin local
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=false"  # Désactive l'interface non sécurisée
+      - "--providers.docker=true"  # Activer l'intégration Docker
+      - "--entrypoints.web.address=:80"  # HTTP (redirection vers HTTPS)
+      - "--entrypoints.websecure.address=:443"  # HTTPS
+      - "--certificatesresolvers.myresolver.acme.httpChallenge=true"  # Challenge HTTP
+      - "--certificatesresolvers.myresolver.acme.httpChallenge.entryPoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=danitiag.fariados@hes-so.ch"  # Email pour Let's Encrypt
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Stockage des certificats
+    ports:
+      - "80:80"  # HTTP
+      - "443:443"  # HTTPS
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"  # Nécessaire pour la configuration automatique
+      - "./letsencrypt:/letsencrypt"  # Persister les certificats

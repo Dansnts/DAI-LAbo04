@@ -1,7 +1,7 @@
 # Ajout d'un pokémon
 
 ``` bash
-curl -X POST http://localhost:8080/pokemon \
+curl -X POST http://localhost:7000/pokemon \
 -H "Content-Type: application/json" \
 -d '{
     "number": "001",
@@ -20,7 +20,7 @@ curl -X POST http://localhost:8080/pokemon \
 # Ajout de plusieurs pokémon
 
 ```bash
-curl -X POST http://localhost:8080/pokemon/batch \
+curl -X POST http://localhost:7000/pokemon/batch \
 -H "Content-Type: application/json" \
 -d '[
     {
@@ -123,5 +123,50 @@ curl -X POST http://localhost:8080/pokemon/batch \
         "regions": ["Kanto"]
     }
 ]'
+
+```
+
+
+# Ajout d'un dresseur
+
+``` bash
+curl -X POST http://localhost:7000/trainer \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Red"
+}'
+
+```
+
+
+# Ajout d'un dresseur
+
+``` bash
+curl -X POST http://localhost:7000/trainer \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Red"
+}'
+
+```
+
+
+# Renommer un Pokémon
+``` bash
+curl -X PATCH http://localhost:7000/pokemon/025 \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "Piqachou"
+}'
+
+```
+
+# Renommer un dresseur
+``` bash
+curl -X PATCH http://localhost:7000/Trainer/Red \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "SouljaBoy"
+}'
 
 ```
