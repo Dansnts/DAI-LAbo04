@@ -468,6 +468,69 @@ public class API {
             }
         });
 
+        app.patch("/trainer/{name}", ctx -> {
+            String trainerName = ctx.pathParam("name");
+            Trainer existingTrainer = trainers.get(trainerName);
+
+            if (existingTrainer != null) {
+                Trainer updatedData = ctx.bodyAsClass(Trainer.class);
+
+                // Update trainer's name if provided and different
+                if (updatedData.getName() != null && !updatedData.getName().equals(trainerName)) {
+                    String newName = updatedData.getName();
+                    if (trainers.get(newName) == null) {
+                        existingTrainer.setName(newName);  // Update name
+                        trainers.put(newName, existingTrainer);  // Reassign to new name
+                        trainers.remove(trainerName);  // Remove old name from trainers map
+                    } else {
+                        ctx.status(HttpStatus.CONFLICT).result("Trainer with this name already exists.");
+                        return;
+                    }
+                }
+
+                // Update other properties of the Trainer if needed
+                // For example, if there are other fields to update, do it here.
+
+                ctx.status(HttpStatus.OK).result("Trainer updated successfully.");
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found.");
+            }
+        });
+
+        app.patch("/trainer/{name}/pokemons", ctx -> {
+            String trainerName = ctx.pathParam("name");
+            Trainer existingTrainer = trainers.get(trainerName);
+
+            if (existingTrainer != null) {
+
+                List<Pokemon> pokemonsToAdd = ctx.bodyAsClass(ArrayList.class);
+                ArrayList<Pokemon> validatedPokemons = new ArrayList<>();
+                existingTrainer.getPokemons().clear();
+
+                for (Object obj : pokemonsToAdd) {
+                    Map<String, Object> pokemonMap = (Map<String, Object>) obj;
+                    String number = (String) pokemonMap.get("number");
+
+                    // Vérifier si le Pokémon existe dans le Pokédex
+                    Pokemon pokedexPokemon = pokedex.get(number);
+                    if (pokedexPokemon != null) {
+                        validatedPokemons.add(pokedexPokemon);
+                    } else {
+                        ctx.status(HttpStatus.BAD_REQUEST).result("Pokémon with number " + number + " not found in Pokédex.");
+                        return;
+                    }
+                }
+
+                existingTrainer.addPokemons(validatedPokemons);
+                ctx.status(HttpStatus.OK).json(existingTrainer);
+            } else {
+                ctx.status(HttpStatus.NOT_FOUND).result("Trainer not found");
+            }
+        });
+
+
+
+
         // DELETE
         app.delete("/pokemon/{number}", ctx -> {
             String number = ctx.pathParam("number");
